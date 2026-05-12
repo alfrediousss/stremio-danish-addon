@@ -225,7 +225,7 @@ builder.defineMetaHandler(async ({ type, id }) => {
 });
 
 // THIS starts the addon server
-serveHTTP(builder.getInterface(), { port: 7000 });
+serveHTTP(builder.getInterface(), { port: process.env.PORT || 10000 });
 
 console.log("Addon running at:");
 console.log("http://127.0.0.1:7000/manifest.json");
