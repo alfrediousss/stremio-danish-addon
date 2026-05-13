@@ -1,13 +1,12 @@
 require("dotenv").config();
 const { addonBuilder, serveHTTP } = require("stremio-addon-sdk");
-const { getCatalog } = require("./src/catalogs");
-const { getMeta } = require("./src/meta");
-const { handleSearch } = require("./src/search");
-const manifest = require("./src/manifest");
+const { getCatalog } = require("./catalogs");
+const { getMeta } = require("./meta");
+const { handleSearch } = require("./search");
+const manifest = require("./manifest");
 
 const builder = new addonBuilder(manifest);
 
-// ── Catalog Handler ──────────────────────────────────────────────────────────
 builder.defineCatalogHandler(async ({ type, id, extra }) => {
     try {
         if (extra && extra.search) {
@@ -22,11 +21,10 @@ builder.defineCatalogHandler(async ({ type, id, extra }) => {
     }
 });
 
-// ── Meta Handler ─────────────────────────────────────────────────────────────
 builder.defineMetaHandler(async ({ type, id }) => {
     try {
         const meta = await getMeta(type, id);
-        console.log("[meta] Final response id:", meta.id, "type:", meta.type);
+        if (!meta) return { meta: null };
         return { meta };
     } catch (err) {
         console.error(`[meta] ${id} error:`, err.message);
@@ -34,7 +32,6 @@ builder.defineMetaHandler(async ({ type, id }) => {
     }
 });
 
-// ── Start Server ─────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 10000;
 serveHTTP(builder.getInterface(), { port: PORT });
 
