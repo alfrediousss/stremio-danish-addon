@@ -1,31 +1,42 @@
+// src/catalogs.js
 const { trending, topRated, discover, tmdbFetch, poster } = require("./tmdb");
 
 const GENRE = {
     action: 28, comedy: 35, drama: 18, horror: 27, thriller: 53,
-    crime: 80, mystery: 9648, scifi: 878, family: 10751, romance: 10749
+    crime: 80, mystery: 9648, scifi: 878, animation: 16,
+    family: 10751, romance: 10749
 };
 
+// Fetch IMDb ID for a single TMDB item
 async function getImdbId(tmdbId, media) {
     try {
         const data = await tmdbFetch(`/${media}/${tmdbId}/external_ids`);
         return data.imdb_id || null;
-    } catch { return null; }
+    } catch {
+        return null;
+    }
 }
 
+// Convert TMDB results to Stremio metas WITH imdb_id
 async function toMetas(results, type) {
     const media = type === "series" ? "tv" : "movie";
     const items = results.filter(r => r.poster_path);
-    const imdbIds = await Promise.all(items.map(r => getImdbId(r.id, media)));
+
+    // Fetch IMDb IDs in parallel (batch of 20 max)
+    const imdbIds = await Promise.all(
+        items.map(r => getImdbId(r.id, media))
+    );
 
     return items.map((r, i) => {
         const imdbId = imdbIds[i];
-        return {
-            id:     imdbId || `tmdb:${r.id}`,
+        const meta = {
+            id: imdbId || `tmdb:${r.id}`,   // prefer imdb id, fallback to tmdb:
             type,
-            name:   r.title || r.name || "Unknown",
-            poster: poster(r.poster_path),
-            ...(imdbId ? { imdb_id: imdbId } : {})
+            name: r.title || r.name || "Unknown",
+            poster: poster(r.poster_path)
         };
+        if (imdbId) meta.imdb_id = imdbId;
+        return meta;
     });
 }
 
@@ -37,7 +48,7 @@ const CATALOGS = {
     "ch-hidden-gems":        { type: "movie",  fetch: () => discover("movie", { sort_by: "vote_average.desc", "vote_count.gte": 200, "vote_count.lte": 2000, "vote_average.gte": 7.5 }) },
     "ch-mind-bending":       { type: "movie",  fetch: () => discover("movie", { with_genres: `${GENRE.scifi},${GENRE.thriller}`, sort_by: "vote_average.desc", "vote_count.gte": 500 }) },
     "ch-comfort-movies":     { type: "movie",  fetch: () => discover("movie", { with_genres: `${GENRE.comedy},${GENRE.romance}`, sort_by: "popularity.desc", "vote_average.gte": 6.5 }) },
-    "ch-modern-horror":      { type: "movie",  fetch: () => discover("movie", { with_genres: GENRE.horror, "primary_release_date.gte": "2010-01-01", sort_by: "vote_average.desc", "vote_count.gte": 500, "vote_average.gte": 7.0 }) },
+    "ch-modern-horror":      { type: "movie",  fetch: () => discover("movie", { with_genres: GENRE.horror, sort_by: "vote_average.desc", "primary_release_date.gte": "2010-01-01", "vote_count.gte": 500, "vote_average.gte": 7.0 }) },
     "ch-late-night":         { type: "movie",  fetch: () => discover("movie", { with_genres: `${GENRE.thriller},${GENRE.crime}`, sort_by: "vote_average.desc", "vote_count.gte": 500, "vote_average.gte": 7.0 }) },
     "ch-fast-paced":         { type: "movie",  fetch: () => discover("movie", { with_genres: `${GENRE.action},${GENRE.thriller}`, sort_by: "vote_average.desc", "vote_count.gte": 1000, "vote_average.gte": 7.5 }) },
     "ch-best-acting":        { type: "movie",  fetch: () => discover("movie", { with_genres: GENRE.drama, sort_by: "vote_average.desc", "vote_count.gte": 1000, "vote_average.gte": 7.8 }) },
