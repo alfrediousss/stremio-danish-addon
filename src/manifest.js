@@ -11,7 +11,14 @@ module.exports = {
     logo: "https://i.imgur.com/5xCUxca.png",
     background: "https://image.tmdb.org/t/p/original/rSPw7tgCH9c6NqICZef4kZjFOQ5.jpg",
 
-    resources: ["catalog", "meta"],
+    resources: [
+        "catalog",
+        {
+            name: "meta",
+            types: ["movie", "series"],
+            idPrefixes: ["ch:"]
+        }
+    ],
     types: ["movie", "series"],
     idPrefixes: ["ch:"],
 

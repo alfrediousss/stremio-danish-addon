@@ -26,6 +26,7 @@ builder.defineCatalogHandler(async ({ type, id, extra }) => {
 builder.defineMetaHandler(async ({ type, id }) => {
     try {
         const meta = await getMeta(type, id);
+        console.log("[meta] Final response id:", meta.id, "type:", meta.type);
         return { meta };
     } catch (err) {
         console.error(`[meta] ${id} error:`, err.message);
