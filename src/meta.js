@@ -5,7 +5,8 @@ const { details, credits, videos, images, poster, backdrop, logo } = require("./
 
 // ── Map TMDB media type ──────────────────────────────────────────────────────
 function tmdbType(stremioType) {
-    return stremioType === "series" ? "tv" : "movie";
+    if (stremioType === "series" || stremioType === "tv") return "tv";
+    return "movie";
 }
 
 // ── Extract best English logo from TMDB images ───────────────────────────────
@@ -126,3 +127,7 @@ async function getMeta(type, id) {
 }
 
 module.exports = { getMeta };
+
+async function getMeta(type, id) {
+    console.log(`[meta] type="${type}" id="${id}"`);  // ← add this line
+    const tmdbId = id.replace("tmdb:", "");
