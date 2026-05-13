@@ -27,7 +27,7 @@ function getTrailer(vids) {
 async function getMeta(type, id) {
     console.log(`[meta] type="${type}" id="${id}"`);
 
-    const tmdbId = id.replace("tmdb:", "");
+    const tmdbId = id.replace("ch:", "");
     const media  = tmdbType(type);
 
     try {
@@ -58,7 +58,7 @@ async function getMeta(type, id) {
         const descExtra  = imdbRating ? `\n\n⭐ Rating: ${imdbRating}/10` : "";
 
         const meta = {
-            id:          `tmdb:${data.id}`,
+            id:          `ch:${data.id}`,
             type,
             name,
             year,

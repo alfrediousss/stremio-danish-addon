@@ -29,7 +29,7 @@ function toMetas(results, type) {
     return results
         .filter(r => r.poster_path)
         .map(r => ({
-            id:     `tmdb:${r.id}`,
+            id:     `ch:${r.id}`,
             type,
             name:   r.title || r.name || "Unknown",
             poster: poster(r.poster_path)

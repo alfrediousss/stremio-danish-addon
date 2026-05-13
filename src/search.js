@@ -26,7 +26,7 @@ function relevanceScore(item, query) {
 function toMeta(item) {
     const type = item.media_type === "tv" ? "series" : "movie";
     return {
-        id:     `tmdb:${item.id}`,
+        id:     `ch:${item.id}`,
         type,
         name:   item.title || item.name || "Unknown",
         poster: poster(item.poster_path)

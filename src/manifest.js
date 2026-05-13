@@ -13,7 +13,7 @@ module.exports = {
 
     resources: ["catalog", "meta"],
     types: ["movie", "series"],
-    idPrefixes: ["tmdb:"],
+    idPrefixes: ["ch:"],
 
     behaviorHints: {
         configurable: false,
