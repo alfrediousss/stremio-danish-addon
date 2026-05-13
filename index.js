@@ -1,9 +1,9 @@
 require("dotenv").config();
 const { addonBuilder, serveHTTP } = require("stremio-addon-sdk");
-const { getCatalog } = require("./catalogs");
-const { getMeta } = require("./meta");
-const { handleSearch } = require("./search");
-const manifest = require("./manifest");
+const { getCatalog } = require("./src/catalogs");
+const { getMeta } = require("./src/meta");
+const { handleSearch } = require("./src/search");
+const manifest = require("./src/manifest");
 
 const builder = new addonBuilder(manifest);
 
