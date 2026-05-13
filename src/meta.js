@@ -30,63 +30,77 @@ async function getMeta(type, id) {
     const tmdbId = id.replace("tmdb:", "");
     const media  = tmdbType(type);
 
-    const [data, cast, vids, imgs] = await Promise.all([
-        details(media, tmdbId, "external_ids"),
-        credits(media, tmdbId),
-        videos(media, tmdbId),
-        images(media, tmdbId)
-    ]);
+    try {
+        // Fetch details first alone so we can catch TMDB errors clearly
+        const data = await details(media, tmdbId, "external_ids");
+        console.log(`[meta] TMDB responded: ${data.title || data.name}`);
 
-    const name       = data.title || data.name || "Unknown";
-    const year       = (data.release_date || data.first_air_date || "").slice(0, 4);
-    const runtime    = data.runtime || (data.episode_run_time && data.episode_run_time[0]) || null;
-    const imdbId     = data.external_ids?.imdb_id || null;
-    const genres     = (data.genres || []).map(g => g.name);
-    const imdbRating = data.vote_average ? data.vote_average.toFixed(1) : null;
+        // Fetch the rest in parallel, with individual fallbacks
+        const [cast, vids, imgs] = await Promise.all([
+            credits(media, tmdbId).catch(e => { console.error("[meta] credits error:", e.message); return { cast: [], crew: [] }; }),
+            videos(media, tmdbId).catch(e  => { console.error("[meta] videos error:",  e.message); return { results: [] }; }),
+            images(media, tmdbId).catch(e  => { console.error("[meta] images error:",  e.message); return { logos: [] }; })
+        ]);
 
-    const castList  = (cast.cast || []).slice(0, 10).map(c => c.name);
-    const directors = (cast.crew || []).filter(c => c.job === "Director").map(c => c.name).slice(0, 3);
-    const creators  = (data.created_by || []).map(c => c.name);
+        const name       = data.title || data.name || "Unknown";
+        const year       = (data.release_date || data.first_air_date || "").slice(0, 4);
+        const runtime    = data.runtime || (data.episode_run_time && data.episode_run_time[0]) || null;
+        const imdbId     = data.external_ids?.imdb_id || null;
+        const genres     = (data.genres || []).map(g => g.name);
+        const imdbRating = data.vote_average ? data.vote_average.toFixed(1) : null;
 
-    const trailerObj = getTrailer(vids);
-    const logoUrl    = getBestLogo(imgs);
-    const descExtra  = imdbRating ? `\n\n⭐ Rating: ${imdbRating}/10` : "";
+        const castList  = (cast.cast || []).slice(0, 10).map(c => c.name);
+        const directors = (cast.crew || []).filter(c => c.job === "Director").map(c => c.name).slice(0, 3);
+        const creators  = (data.created_by || []).map(c => c.name);
 
-    const meta = {
-        id:          `tmdb:${data.id}`,
-        type,
-        name,
-        year,
-        poster:      poster(data.poster_path, "w500"),
-        background:  backdrop(data.backdrop_path, "w1280"),
-        description: (data.overview || "") + descExtra,
-        genres,
-        runtime:     runtime ? `${runtime} min` : undefined,
-        cast:        castList,
-        director:    directors,
-        imdbRating,
-        links:       []
-    };
+        const trailerObj = getTrailer(vids);
+        const logoUrl    = getBestLogo(imgs);
+        const descExtra  = imdbRating ? `\n\n⭐ Rating: ${imdbRating}/10` : "";
 
-    if (data.homepage)    meta.links.push({ name: "Official Site", category: "Web", url: data.homepage });
-    if (imdbId) {
-        meta.links.push({ name: "IMDb", category: "IMDb", url: `https://www.imdb.com/title/${imdbId}/` });
-        meta.imdb_id = imdbId;
+        const meta = {
+            id:          `tmdb:${data.id}`,
+            type,
+            name,
+            year,
+            poster:      poster(data.poster_path, "w500"),
+            background:  backdrop(data.backdrop_path, "w1280"),
+            description: (data.overview || "") + descExtra,
+            genres,
+            runtime:     runtime ? `${runtime} min` : undefined,
+            cast:        castList,
+            director:    directors,
+            imdbRating,
+            links:       []
+        };
+
+        if (data.homepage)    meta.links.push({ name: "Official Site", category: "Web", url: data.homepage });
+        if (imdbId) {
+            meta.links.push({ name: "IMDb", category: "IMDb", url: `https://www.imdb.com/title/${imdbId}/` });
+            meta.imdb_id = imdbId;
+        }
+        if (creators.length)  meta.creator  = creators;
+        if (directors.length) meta.director = directors;
+        if (trailerObj)       meta.trailers = [trailerObj];
+        if (logoUrl)          meta.logo     = logoUrl;
+
+        if (type === "series") {
+            meta.status  = data.status;
+            meta.country = (data.origin_country || []).join(", ");
+        }
+        if (!meta.country && data.production_countries?.length) {
+            meta.country = data.production_countries.map(c => c.name).join(", ");
+        }
+
+        console.log(`[meta] SUCCESS: returning meta for "${name}"`);
+        return meta;
+
+    } catch (err) {
+        console.error(`[meta] FAILED for ${media}/${tmdbId}:`, err.message);
+        if (err.response) {
+            console.error(`[meta] TMDB status: ${err.response.status}`, JSON.stringify(err.response.data));
+        }
+        return null;
     }
-    if (creators.length)  meta.creator  = creators;
-    if (directors.length) meta.director = directors;
-    if (trailerObj)       meta.trailers = [trailerObj];
-    if (logoUrl)          meta.logo     = logoUrl;
-
-    if (type === "series") {
-        meta.status  = data.status;
-        meta.country = (data.origin_country || []).join(", ");
-    }
-    if (!meta.country && data.production_countries?.length) {
-        meta.country = data.production_countries.map(c => c.name).join(", ");
-    }
-
-    return meta;
 }
 
 module.exports = { getMeta };
