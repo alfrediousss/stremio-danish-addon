@@ -2,6 +2,9 @@
 // Handles Stremio search queries with fuzzy score boosting.
 
 const { searchMulti, poster } = require("./tmdb");
+const axios = require("axios");
+
+const TMDB_API_KEY = process.env.TMDB_API_KEY;
 
 // ── Simple fuzzy relevance score ─────────────────────────────────────────────
 // Boost items whose title starts with or contains the query string.
@@ -23,12 +26,43 @@ function relevanceScore(item, query) {
 }
 
 // ── Map a TMDB result to a lean Stremio meta ──────────────────────────────────
-function toMeta(item) {
+async function toMeta(item) {
+
     const type = item.media_type === "tv" ? "series" : "movie";
+
+    const endpoint =
+        type === "series"
+            ? "tv"
+            : "movie";
+
+    let imdbId = null;
+
+    try {
+
+        const external = await axios.get(
+            `https://api.themoviedb.org/3/${endpoint}/${item.id}/external_ids`,
+            {
+                params: {
+                    api_key: TMDB_API_KEY
+                }
+            }
+        );
+
+        imdbId = external.data.imdb_id;
+
+    } catch (err) {
+
+        console.error("IMDb lookup failed:", err.message);
+    }
+
     return {
-        id:     `ch:${item.id}`,
+
+        id: imdbId || `tmdb:${item.id}`,
+
         type,
-        name:   item.title || item.name || "Unknown",
+
+        name: item.title || item.name || "Unknown",
+
         poster: poster(item.poster_path)
     };
 }
@@ -50,7 +84,7 @@ async function handleSearch(type, query) {
     // Sort by relevance
     const sorted = raw.sort((a, b) => relevanceScore(b, query) - relevanceScore(a, query));
 
-    return sorted.map(toMeta);
+    return await Promise.all(sorted.map(toMeta));
 }
 
 module.exports = { handleSearch };
