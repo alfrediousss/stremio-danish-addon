@@ -27,17 +27,19 @@ async function toMetas(results, type) {
         items.map(r => getImdbId(r.id, media))
     );
 
-    return items.map((r, i) => {
+    return items
+        .map((r, i) => {
         const imdbId = imdbIds[i];
         const meta = {
-            id: imdbId || `tmdb:${r.id}`,   // prefer imdb id, fallback to tmdb:
+            id: imdbId,
             type,
             name: r.title || r.name || "Unknown",
             poster: poster(r.poster_path)
         };
         if (imdbId) meta.imdb_id = imdbId;
-        return meta;
-    });
+        return imdbId ? meta : null;
+    })
+    .filter(Boolean);
 }
 
 const CATALOGS = {

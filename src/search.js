@@ -57,7 +57,7 @@ async function toMeta(item) {
 
     return {
 
-        id: imdbId || `tmdb:${item.id}`,
+        id: imdbId,
 
         type,
 
@@ -84,7 +84,9 @@ async function handleSearch(type, query) {
     // Sort by relevance
     const sorted = raw.sort((a, b) => relevanceScore(b, query) - relevanceScore(a, query));
 
-    return await Promise.all(sorted.map(toMeta));
+    const metas = await Promise.all(sorted.map(toMeta));
+
+    return metas.filter(m => m && m.id);
 }
 
 module.exports = { handleSearch };

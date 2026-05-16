@@ -16,11 +16,11 @@ module.exports = {
         {
             name: "meta",
             types: ["movie", "series"],
-            idPrefixes: ["tt", "tmdb:", "ch:"]
+            idPrefixes: ["tt"]
         }
     ],
     types: ["movie", "series"],
-    idPrefixes: ["tt", "tmdb:", "ch:"],
+    idPrefixes: ["tt"],
 
     behaviorHints: {
         configurable: false,
